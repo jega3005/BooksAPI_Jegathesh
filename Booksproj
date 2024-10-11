@@ -1,0 +1,137 @@
+using System.Collections.Generic;
+
+public class Owner
+{
+    public string Name { get; set; }
+    public int Age { get; set; }
+    public List<Book> Books { get; set; }
+}
+
+public class Book
+{
+    public string Name { get; set; }
+    public string Type { get; set; } 
+}
+Controller: Create a controller that returns a list of owners and books.
+[ApiController]
+[Route("api/[controller]")]
+public class BooksController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult GetBooks()
+    {
+        var owners = new List<Owner>
+        {
+            new Owner
+            {
+                Name = "Owner 1",
+                Age = 25,
+                Books = new List<Book>
+                {
+                    new Book { Name = "Great Expectations", Type = "Hardcover" },
+                    new Book { Name = "Gulliver's Travels", Type = "Paperback" }
+                }
+            },
+            new Owner
+            {
+                Name = "Owner 2",
+                Age = 15,
+                Books = new List<Book>
+                {
+                    new Book { Name = "Little Red Riding Hood", Type = "Hardcover" },
+                    new Book { Name = "The Hobbit", Type = "Paperback" }
+                }
+            }
+        };
+
+        return Ok(owners);
+    }
+}
+Frontend (React App)
+//Create a React application that fetches data from the .NET API and displays it according to the specifications.
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+
+const App = () => {
+    const [owners, setOwners] = useState([]);
+    const [showHardcover, setShowHardcover] = useState(false);
+
+    useEffect(() => {
+        axios.get('http://localhost:5000/api/books')
+            .then(response => setOwners(response.data))
+            .catch(error => console.error('Error fetching data:', error));
+    }, []);
+
+    // Function to filter and sort books
+    const getBooks = () => {
+        const adults = [];
+        const children = [];
+
+        owners.forEach(owner => {
+            const books = owner.Books
+                .filter(book => !showHardcover || book.Type === 'Hardcover')
+                .map(book => book.Name);
+
+            if (books.length) {
+                const category = owner.Age >= 18 ? adults : children;
+                category.push(...books);
+            }
+        });
+
+        return {
+            adults: adults.sort(),
+            children: children.sort()
+        };
+    };
+
+    const { adults, children } = getBooks();
+
+    return (
+        <div className="container">
+            <h1>Owners and Books</h1>
+            <div className="buttons">
+                <button onClick={() => setShowHardcover(false)}>Get Books</button>
+                <button onClick={() => setShowHardcover(true)}>Hardcover only</button>
+            </div>
+            <div className="book-lists">
+                <div className="list">
+                    <h2>{showHardcover ? 'Hardcover Books owned by Adults' : 'Books owned by Adults'}</h2>
+                    <ul>{adults.map((book, index) => <li key={index}>{book}</li>)}</ul>
+                </div>
+                <div className="list">
+                    <h2>{showHardcover ? 'Hardcover Books owned by Children' : 'Books owned by Children'}</h2>
+                    <ul>{children.map((book, index) => <li key={index}>{book}</li>)}</ul>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default App;
+//Styling: Use CSS to style the application, considering the breakpoint of 600px for responsiveness.
+.container {
+    padding: 20px;
+    background-color: #0079c8;
+    color: white;
+}
+
+.book-lists {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
+
+.list {
+    padding: 10px;
+    background-color: white;
+    color: black;
+    border-radius: 5px;
+    max-width: 300px;
+}
+
+@media (max-width: 600px) {
+    .book-lists {
+        flex-direction: column;
+        align-items: center;
+    }
+}
